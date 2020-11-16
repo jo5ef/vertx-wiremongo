@@ -2,10 +2,8 @@ package com.noenv.wiremongo.mapping.collection;
 
 import com.noenv.wiremongo.TestBase;
 import com.noenv.wiremongo.mapping.Mapping;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -18,30 +16,28 @@ public class GetCollectionsTest extends TestBase {
 
   @Test
   public void testGetCollections(TestContext ctx) {
-    Async async = ctx.async();
     Mapping<?, ?, ?> m = mock.getCollections()
       .returns(Arrays.asList("collection1", "collection2"));
 
-    db.rxGetCollections()
-      .subscribe(s -> {
+    db.getCollections()
+      .onSuccess(s -> {
         ctx.assertEquals(Arrays.asList("collection1", "collection2"), s);
         mock.removeMapping(m);
-        async.complete();
-      }, ctx::fail);
+      })
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testGetCollectionError(TestContext ctx) {
-    Async async = ctx.async();
     Mapping<?, ?, ?> m = mock.getCollections()
       .returnsError(new Exception("intentional"));
 
-    db.rxGetCollections()
-      .subscribe(s -> ctx.fail(), ex -> {
+    db.getCollections()
+      .onFailure(ex -> {
         ctx.assertEquals("intentional", ex.getMessage());
         mock.removeMapping(m);
-        async.complete();
-      });
+      })
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -51,14 +47,12 @@ public class GetCollectionsTest extends TestBase {
 
     mock.getCollections().returns(given);
 
-    db.rxGetCollections()
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.getCollections()
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.remove(0);
         actual.add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

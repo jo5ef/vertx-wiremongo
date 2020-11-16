@@ -1,60 +1,44 @@
 package com.noenv.wiremongo.mapping.find;
 
-import com.noenv.wiremongo.Stub;
-import com.noenv.wiremongo.StubBase;
 import com.noenv.wiremongo.TestBase;
-import com.noenv.wiremongo.command.find.FindBaseCommand;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 @RunWith(VertxUnitRunner.class)
 public class FindTest extends TestBase {
 
   @Test
   public void testFind(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.find()
       .inCollection("find")
       .withQuery(new JsonObject().put("test", "testFind"))
       .returns(Arrays.asList(new JsonObject().put("field1", "value1")));
 
-    db.rxFind("find", new JsonObject().put("test", "testFind"))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.get(0).getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.find("find", new JsonObject().put("test", "testFind"))
+      .onSuccess(r -> ctx.assertEquals("value1", r.get(0).getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFind("find", new JsonObject().put("test", "testFindFile"))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.get(0).getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.find("find", new JsonObject().put("test", "testFindFile"))
+      .onSuccess(r -> ctx.assertEquals("value1", r.get(0).getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFind("find", new JsonObject().put("test", "testFindFileError"))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+    db.find("find", new JsonObject().put("test", "testFindFileError"))
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -77,9 +61,9 @@ public class FindTest extends TestBase {
       .withQuery(new JsonObject().put("test", "testFind"))
       .returns(new ArrayList<>(Collections.singletonList(given)));
 
-    db.rxFind("find", new JsonObject().put("test", "testFind"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
-      .doOnSuccess(actual -> {
+    db.find("find", new JsonObject().put("test", "testFind"))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
+      .onSuccess(actual -> {
         actual.get(0).put("field1", "replace");
         actual.get(0).remove("field2");
         actual.get(0).put("add", "add");
@@ -90,24 +74,20 @@ public class FindTest extends TestBase {
         actual.get(0).getJsonObject("field3").getJsonArray("field6").add("add");
         actual.add(new JsonObject().put("new object", "new object"));
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindFileReturnedObjectNotModified(TestContext ctx) {
     final JsonObject expected = new JsonObject().put("field1", "value1");
 
-    db.rxFind("find", new JsonObject().put("test", "testFindFile"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
-      .doOnSuccess(actual -> {
+    db.find("find", new JsonObject().put("test", "testFindFile"))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
+      .onSuccess(actual -> {
         actual.get(0).put("field1", "replace");
         actual.get(0).put("add", "add");
         actual.add(new JsonObject().put("new object", "new object"));
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

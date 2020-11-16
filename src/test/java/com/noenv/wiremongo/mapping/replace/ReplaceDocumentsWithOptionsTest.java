@@ -6,10 +6,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClientUpdateResult;
 import io.vertx.ext.mongo.UpdateOptions;
 import io.vertx.ext.mongo.WriteOption;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -18,8 +16,6 @@ public class ReplaceDocumentsWithOptionsTest extends TestBase {
 
   @Test
   public void testReplaceDocumentsWithOptions(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.replaceDocumentsWithOptions()
       .inCollection("replaceDocumentsWithOptions")
       .withQuery(new JsonObject().put("test", "testReplaceDocumentsWithOptions"))
@@ -27,39 +23,37 @@ public class ReplaceDocumentsWithOptionsTest extends TestBase {
       .withOptions(new UpdateOptions(true, false))
       .returns(new MongoClientUpdateResult(17, null, 24));
 
-    db.rxReplaceDocumentsWithOptions("replaceDocumentsWithOptions",
+    db.replaceDocumentsWithOptions("replaceDocumentsWithOptions",
       new JsonObject().put("test", "testReplaceDocumentsWithOptions"),
       new JsonObject().put("foo", "bar"), new UpdateOptions(true, false))
-      .subscribe(r -> {
+      .onSuccess(r -> {
         ctx.assertEquals(17L, r.getDocMatched());
         ctx.assertEquals(24L, r.getDocModified());
-        async.complete();
-      }, ctx::fail);
+      })
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testReplaceDocumentsWithOptionsFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxReplaceDocumentsWithOptions("replaceDocumentsWithOptions",
+
+    db.replaceDocumentsWithOptions("replaceDocumentsWithOptions",
       new JsonObject().put("test", "testReplaceDocumentsWithOptionsFile"),
       new JsonObject().put("foo", "bar"), new UpdateOptions(false, true))
-      .subscribe(r -> {
+      .onSuccess(r -> {
         ctx.assertEquals(21L, r.getDocMatched());
         ctx.assertEquals(56L, r.getDocModified());
-        async.complete();
-      }, ctx::fail);
+      })
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testReplaceDocumentsWithOptionsFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxReplaceDocumentsWithOptions("replaceDocumentsWithOptions",
+
+    db.replaceDocumentsWithOptions("replaceDocumentsWithOptions",
       new JsonObject().put("test", "testReplaceDocumentsWithOptionsFileError"),
       new JsonObject().put("foo", "bar"), new UpdateOptions().setWriteOption(WriteOption.MAJORITY))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -84,9 +78,9 @@ public class ReplaceDocumentsWithOptionsTest extends TestBase {
       .withOptions(new UpdateOptions(true, false))
       .returns(given);
 
-    db.rxReplaceDocumentsWithOptions("replaceDocumentsWithOptions", new JsonObject().put("test", "testReplaceDocumentsWithOptions"), new JsonObject().put("foo", "bar"), new UpdateOptions(true, false))
-      .doOnSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
-      .doOnSuccess(actual -> {
+    db.replaceDocumentsWithOptions("replaceDocumentsWithOptions", new JsonObject().put("test", "testReplaceDocumentsWithOptions"), new JsonObject().put("foo", "bar"), new UpdateOptions(true, false))
+      .onSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
+      .onSuccess(actual -> {
         actual.getDocUpsertedId().put("field1", "replace");
         actual.getDocUpsertedId().remove("field2");
         actual.getDocUpsertedId().put("add", "add");
@@ -96,23 +90,19 @@ public class ReplaceDocumentsWithOptionsTest extends TestBase {
         actual.getDocUpsertedId().getJsonObject("field3").getJsonArray("field6").remove(0);
         actual.getDocUpsertedId().getJsonObject("field3").getJsonArray("field6").add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testReplaceDocumentsWithOptionsFileReturnedObjectNotModified(TestContext ctx) {
     final MongoClientUpdateResult expected = new MongoClientUpdateResult(21, new JsonObject().put("field1", "value1"), 56);
 
-    db.rxReplaceDocumentsWithOptions("replaceDocumentsWithOptions", new JsonObject().put("test", "testReplaceDocumentsWithOptionsFile"), new JsonObject().put("foo", "bar"), new UpdateOptions(false, true))
-      .doOnSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
-      .doOnSuccess(actual -> {
+    db.replaceDocumentsWithOptions("replaceDocumentsWithOptions", new JsonObject().put("test", "testReplaceDocumentsWithOptionsFile"), new JsonObject().put("foo", "bar"), new UpdateOptions(false, true))
+      .onSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
+      .onSuccess(actual -> {
         actual.getDocUpsertedId().put("field1", "replace");
         actual.getDocUpsertedId().put("add", "add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

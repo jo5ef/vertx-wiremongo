@@ -15,20 +15,20 @@ public class DropCollectionTest extends TestBase {
     mock.dropCollection()
       .inCollection("testDropCollection")
       .returns(null);
-    db.rxDropCollection("testDropCollection")
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+    db.dropCollection("testDropCollection")
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testDropCollectionFile(TestContext ctx) {
-    db.rxDropCollection("testDropCollectionFile")
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+    db.dropCollection("testDropCollectionFile")
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testDropCollectionFileError(TestContext ctx) {
-    db.rxDropCollection("testDropCollectionFileError")
-      .doOnError(e -> ctx.assertEquals("intentional", e.getMessage()))
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertFailure()));
+    db.dropCollection("testDropCollectionFileError")
+      .onFailure(e -> ctx.assertEquals("intentional", e.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 }

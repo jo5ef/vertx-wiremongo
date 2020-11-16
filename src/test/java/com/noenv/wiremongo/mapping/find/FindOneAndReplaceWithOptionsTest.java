@@ -18,8 +18,6 @@ public class FindOneAndReplaceWithOptionsTest extends TestBase {
 
   @Test
   public void testFindOneAndReplaceWithOptions(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.findOneAndReplaceWithOptions()
       .inCollection("findOneAndReplaceWithOptions")
       .withQuery(new JsonObject().put("test", "testFindOneAndReplaceWithOptions"))
@@ -28,43 +26,35 @@ public class FindOneAndReplaceWithOptionsTest extends TestBase {
       .withUpdateOptions(new UpdateOptions().setWriteOption(WriteOption.FSYNCED))
       .returns(new JsonObject().put("field1", "value1"));
 
-    db.rxFindOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
+    db.findOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
       new JsonObject().put("test", "testFindOneAndReplaceWithOptions"),
       new JsonObject().put("foo", "bar"),
       new FindOptions().setLimit(4),
       new UpdateOptions().setWriteOption(WriteOption.FSYNCED))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.getString("field1"));
-        async.complete();
-      }, ctx::fail);
+      .onSuccess(r -> ctx.assertEquals("value1", r.getString("field1")))
+    .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndReplaceWithOptionsFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
+    db.findOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
       new JsonObject().put("test", "testFindOneAndReplaceWithOptionsFile"),
       new JsonObject().put("foo", "bar"),
       new FindOptions().setFields(new JsonObject().put("field1", -1)),
       new UpdateOptions().setReturningNewDocument(false))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.getString("field1"));
-        async.complete();
-      }, ctx::fail);
+      .onSuccess(r -> ctx.assertEquals("value1", r.getString("field1")))
+    .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndReplaceWithOptionsFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
+    db.findOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
       new JsonObject().put("test", "testFindOneAndReplaceWithOptionsFileError"),
       new JsonObject().put("foo", "bar"),
       new FindOptions().setLimit(42),
       new UpdateOptions().setUpsert(true))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+    .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -90,13 +80,13 @@ public class FindOneAndReplaceWithOptionsTest extends TestBase {
       .withUpdateOptions(new UpdateOptions().setWriteOption(WriteOption.FSYNCED))
       .returns(given);
 
-    db.rxFindOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
+    db.findOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
       new JsonObject().put("test", "testFindOneAndReplaceWithOptions"),
       new JsonObject().put("foo", "bar"),
       new FindOptions().setLimit(4),
       new UpdateOptions().setWriteOption(WriteOption.FSYNCED))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.put("field1", "replace");
         actual.remove("field2");
         actual.put("add", "add");
@@ -106,27 +96,23 @@ public class FindOneAndReplaceWithOptionsTest extends TestBase {
         actual.getJsonObject("field3").getJsonArray("field6").remove(0);
         actual.getJsonObject("field3").getJsonArray("field6").add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndReplaceWithOptionsFileReturnedObjectNotModified(TestContext ctx) {
     final JsonObject expected = new JsonObject().put("field1", "value1");
 
-    db.rxFindOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
+    db.findOneAndReplaceWithOptions("findOneAndReplaceWithOptions",
       new JsonObject().put("test", "testFindOneAndReplaceWithOptionsFile"),
       new JsonObject().put("foo", "bar"),
       new FindOptions().setFields(new JsonObject().put("field1", -1)),
       new UpdateOptions().setReturningNewDocument(false))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.put("field1", "replace");
         actual.put("add", "add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

@@ -3,54 +3,39 @@ package com.noenv.wiremongo.mapping.find;
 import com.noenv.wiremongo.TestBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 @RunWith(VertxUnitRunner.class)
 public class FindOneAndUpdateTest extends TestBase {
 
   @Test
   public void testFindOneAndUpdate(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.findOneAndUpdate()
       .inCollection("findoneandupdate")
       .withQuery(new JsonObject().put("test", "testFindOneAndUpdate"))
       .withUpdate(new JsonObject().put("foo", "bar"))
       .returns(new JsonObject().put("field1", "value1"));
 
-    db.rxFindOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdate"), new JsonObject().put("foo", "bar"))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.findOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdate"), new JsonObject().put("foo", "bar"))
+      .onSuccess(r -> ctx.assertEquals("value1", r.getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndUpdateFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdateFile"), new JsonObject().put("foo", "bar"))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.findOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdateFile"), new JsonObject().put("foo", "bar"))
+      .onSuccess(r -> ctx.assertEquals("value1", r.getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndUpdateFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdateFileError"), new JsonObject().put("foo", "bar"))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+    db.findOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdateFileError"), new JsonObject().put("foo", "bar"))
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -74,9 +59,9 @@ public class FindOneAndUpdateTest extends TestBase {
       .withUpdate(new JsonObject().put("foo", "bar"))
       .returns(given);
 
-    db.rxFindOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdate"), new JsonObject().put("foo", "bar"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.findOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdate"), new JsonObject().put("foo", "bar"))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.put("field1", "replace");
         actual.remove("field2");
         actual.put("add", "add");
@@ -86,23 +71,19 @@ public class FindOneAndUpdateTest extends TestBase {
         actual.getJsonObject("field3").getJsonArray("field6").remove(0);
         actual.getJsonObject("field3").getJsonArray("field6").add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndUpdateFileReturnedObjectNotModified(TestContext ctx) {
     final JsonObject expected = new JsonObject().put("field1", "value1");
 
-    db.rxFindOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdateFile"), new JsonObject().put("foo", "bar"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.findOneAndUpdate("findoneandupdate", new JsonObject().put("test", "testFindOneAndUpdateFile"), new JsonObject().put("foo", "bar"))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.put("field1", "replace");
         actual.put("add", "add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

@@ -16,19 +16,19 @@ public class DropIndexTest extends TestBase {
       .inCollection("dropIndex")
       .withName("testDropIndex")
       .returns(null);
-    db.rxDropIndex("dropIndex", "testDropIndex")
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+    db.dropIndex("dropIndex", "testDropIndex")
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testDropIndexFile(TestContext ctx) {
-    db.rxDropIndex("dropIndex", "testDropIndexFile")
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+    db.dropIndex("dropIndex", "testDropIndexFile")
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testDropIndexFileError(TestContext ctx) {
-    db.rxDropIndex("dropIndex", "testDropIndexFileError")
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertFailure()));
+    db.dropIndex("dropIndex", "testDropIndexFileError")
+      .onComplete(ctx.asyncAssertFailure());
   }
 }

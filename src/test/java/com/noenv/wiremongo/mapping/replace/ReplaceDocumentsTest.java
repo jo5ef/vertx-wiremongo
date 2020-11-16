@@ -4,59 +4,48 @@ import com.noenv.wiremongo.TestBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClientUpdateResult;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 @RunWith(VertxUnitRunner.class)
 public class ReplaceDocumentsTest extends TestBase {
 
   @Test
   public void testReplaceDocuments(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.replaceDocuments()
       .inCollection("replaceDocuments")
       .withQuery(new JsonObject().put("test", "testReplaceDocuments"))
       .withReplace(new JsonObject().put("foo", "bar"))
       .returns(new MongoClientUpdateResult(17, null, 24));
 
-    db.rxReplaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocuments"),
+    db.replaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocuments"),
       new JsonObject().put("foo", "bar"))
-      .subscribe(r -> {
+      .onSuccess(r -> {
         ctx.assertEquals(17L, r.getDocMatched());
         ctx.assertEquals(24L, r.getDocModified());
-        async.complete();
-      }, ctx::fail);
+      })
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testReplaceDocumentsFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxReplaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocumentsFile"),
+    db.replaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocumentsFile"),
       new JsonObject().put("foo", "bar"))
-      .subscribe(r -> {
+      .onSuccess(r -> {
         ctx.assertEquals(21L, r.getDocMatched());
         ctx.assertEquals(56L, r.getDocModified());
-        async.complete();
-      }, ctx::fail);
+      })
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testReplaceDocumentsFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxReplaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocumentsFileError"),
+    db.replaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocumentsFileError"),
       new JsonObject().put("foo", "bar"))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -80,10 +69,10 @@ public class ReplaceDocumentsTest extends TestBase {
       .withReplace(new JsonObject().put("foo", "bar"))
       .returns(given);
 
-    db.rxReplaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocuments"),
+    db.replaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocuments"),
       new JsonObject().put("foo", "bar"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
-      .doOnSuccess(actual -> {
+      .onSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
+      .onSuccess(actual -> {
         actual.getDocUpsertedId().put("field1", "replace");
         actual.getDocUpsertedId().remove("field2");
         actual.getDocUpsertedId().put("add", "add");
@@ -93,23 +82,19 @@ public class ReplaceDocumentsTest extends TestBase {
         actual.getDocUpsertedId().getJsonObject("field3").getJsonArray("field6").remove(0);
         actual.getDocUpsertedId().getJsonObject("field3").getJsonArray("field6").add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testReplaceDocumentsFileReturnedObjectNotModified(TestContext ctx) {
     final MongoClientUpdateResult expected = new MongoClientUpdateResult(21, new JsonObject().put("field1", "value1"), 56);
 
-    db.rxReplaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocumentsFile"), new JsonObject().put("foo", "bar"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
-      .doOnSuccess(actual -> {
+    db.replaceDocuments("replaceDocuments", new JsonObject().put("test", "testReplaceDocumentsFile"), new JsonObject().put("foo", "bar"))
+      .onSuccess(actual -> ctx.assertEquals(expected.toJson(), actual.toJson()))
+      .onSuccess(actual -> {
         actual.getDocUpsertedId().put("field1", "replace");
         actual.getDocUpsertedId().put("add", "add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

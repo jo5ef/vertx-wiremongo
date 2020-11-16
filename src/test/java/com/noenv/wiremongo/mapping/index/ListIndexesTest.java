@@ -22,31 +22,31 @@ public class ListIndexesTest extends TestBase {
     mock.listIndexes()
       .inCollection("testListIndexes")
       .returns(new JsonArray().add(18).add(27));
-    db.rxListIndexes("testListIndexes")
-      .doOnSuccess(r -> {
+    db.listIndexes("testListIndexes")
+      .onSuccess(r -> {
         ctx.assertEquals(2, r.size());
         ctx.assertEquals(18, r.getInteger(0));
         ctx.assertEquals(27, r.getInteger(1));
       })
-      .subscribe(SingleHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testListIndexesFile(TestContext ctx) {
-    db.rxListIndexes("testListIndexesFile")
-      .doOnSuccess(r -> {
+    db.listIndexes("testListIndexesFile")
+      .onSuccess(r -> {
         ctx.assertEquals(2, r.size());
         ctx.assertEquals(87, r.getInteger(0));
         ctx.assertEquals(92, r.getInteger(1));
       })
-      .subscribe(SingleHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testListIndexesFileError(TestContext ctx) {
-    db.rxListIndexes("testListIndexesFileError")
-      .doOnError(e -> ctx.assertEquals("intentional", e.getMessage()))
-      .subscribe(SingleHelper.toObserver(ctx.asyncAssertFailure()));
+    db.listIndexes("testListIndexesFileError")
+      .onFailure(e -> ctx.assertEquals("intentional", e.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -68,30 +68,26 @@ public class ListIndexesTest extends TestBase {
       .inCollection("testListIndexes")
       .returns(given);
 
-    db.rxListIndexes("testListIndexes")
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.listIndexes("testListIndexes")
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.remove(0);
         actual.add("add");
         actual.getJsonObject(1).put("add", "add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testListIndexesFileReturnedObjectNotModified(TestContext ctx) {
     final JsonArray expected = new JsonArray().add(87).add(92);
 
-    db.rxListIndexes("testListIndexesFile")
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.listIndexes("testListIndexesFile")
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.remove(0);
         actual.add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

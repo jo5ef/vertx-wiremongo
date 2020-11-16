@@ -4,56 +4,43 @@ import com.noenv.wiremongo.TestBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.FindOptions;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 @RunWith(VertxUnitRunner.class)
 public class FindWithOptionsTest extends TestBase {
 
   @Test
   public void testFindWithOptions(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.findWithOptions()
       .inCollection("findwithoptions")
       .withQuery(new JsonObject().put("test", "testFindWithOptions"))
       .withOptions(new FindOptions().setLimit(42))
       .returns(Arrays.asList(new JsonObject().put("field1", "value1")));
 
-    db.rxFindWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptions"), new FindOptions().setLimit(42))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.get(0).getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.findWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptions"), new FindOptions().setLimit(42))
+      .onSuccess(r -> ctx.assertEquals("value1", r.get(0).getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindWithOptionsFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptionsFile"), new FindOptions().setSkip(42))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.get(0).getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.findWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptionsFile"), new FindOptions().setSkip(42))
+      .onSuccess(r -> ctx.assertEquals("value1", r.get(0).getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindWithOptionsFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptionsFileError"), new FindOptions().setSkip(42))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+    db.findWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptionsFileError"), new FindOptions().setSkip(42))
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -77,9 +64,9 @@ public class FindWithOptionsTest extends TestBase {
       .withOptions(new FindOptions().setLimit(42))
       .returns(new ArrayList<>(Collections.singletonList(given)));
 
-    db.rxFindWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptions"), new FindOptions().setLimit(42))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
-      .doOnSuccess(actual -> {
+    db.findWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptions"), new FindOptions().setLimit(42))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
+      .onSuccess(actual -> {
         actual.get(0).put("field1", "replace");
         actual.get(0).remove("field2");
         actual.get(0).put("add", "add");
@@ -90,24 +77,20 @@ public class FindWithOptionsTest extends TestBase {
         actual.get(0).getJsonObject("field3").getJsonArray("field6").add("add");
         actual.add(new JsonObject().put("new object", "new object"));
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindWithOptionsFileReturnedObjectNotModified(TestContext ctx) {
     final JsonObject expected = new JsonObject().put("field1", "value1");
 
-    db.rxFindWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptionsFile"), new FindOptions().setSkip(42))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
-      .doOnSuccess(actual -> {
+    db.findWithOptions("findwithoptions", new JsonObject().put("test", "testFindWithOptionsFile"), new FindOptions().setSkip(42))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual.get(0)))
+      .onSuccess(actual -> {
         actual.get(0).put("field1", "replace");
         actual.get(0).put("add", "add");
         actual.add(new JsonObject().put("new object", "new object"));
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }

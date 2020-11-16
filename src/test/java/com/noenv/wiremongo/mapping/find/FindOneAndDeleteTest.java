@@ -3,10 +3,8 @@ package com.noenv.wiremongo.mapping.find;
 import com.noenv.wiremongo.TestBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -15,38 +13,28 @@ public class FindOneAndDeleteTest extends TestBase {
 
   @Test
   public void testFindOneAndDelete(TestContext ctx) {
-    Async async = ctx.async();
-
     mock.findOneAndDelete()
       .inCollection("findOneAndDelete")
       .withQuery(new JsonObject().put("test", "testFindOneAndDelete"))
       .returns(new JsonObject().put("field1", "value1"));
 
-    db.rxFindOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDelete"))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.findOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDelete"))
+      .onSuccess(r -> ctx.assertEquals("value1", r.getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndDeleteFile(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDeleteFile"))
-      .subscribe(r -> {
-        ctx.assertEquals("value1", r.getString("field1"));
-        async.complete();
-      }, ctx::fail);
+    db.findOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDeleteFile"))
+      .onSuccess(r -> ctx.assertEquals("value1", r.getString("field1")))
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndDeleteFileError(TestContext ctx) {
-    Async async = ctx.async();
-    db.rxFindOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDeleteFileError"))
-      .subscribe(r -> ctx.fail(), ex -> {
-        ctx.assertEquals("intentional", ex.getMessage());
-        async.complete();
-      });
+    db.findOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDeleteFileError"))
+      .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
+      .onComplete(ctx.asyncAssertFailure());
   }
 
   @Test
@@ -69,9 +57,9 @@ public class FindOneAndDeleteTest extends TestBase {
       .withQuery(new JsonObject().put("test", "testFindOneAndDelete"))
       .returns(given);
 
-    db.rxFindOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDelete"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.findOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDelete"))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.put("field1", "replace");
         actual.remove("field2");
         actual.put("add", "add");
@@ -81,23 +69,18 @@ public class FindOneAndDeleteTest extends TestBase {
         actual.getJsonObject("field3").getJsonArray("field6").remove(0);
         actual.getJsonObject("field3").getJsonArray("field6").add("add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
   public void testFindOneAndDeleteFileReturnedObjectNotModified(TestContext ctx) {
     final JsonObject expected = new JsonObject().put("field1", "value1");
-
-    db.rxFindOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDeleteFile"))
-      .doOnSuccess(actual -> ctx.assertEquals(expected, actual))
-      .doOnSuccess(actual -> {
+    db.findOneAndDelete("findOneAndDelete", new JsonObject().put("test", "testFindOneAndDeleteFile"))
+      .onSuccess(actual -> ctx.assertEquals(expected, actual))
+      .onSuccess(actual -> {
         actual.put("field1", "replace");
         actual.put("add", "add");
       })
-      .repeat(2)
-      .ignoreElements()
-      .subscribe(CompletableHelper.toObserver(ctx.asyncAssertSuccess()));
+      .onComplete(ctx.asyncAssertSuccess());
   }
 }
