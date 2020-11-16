@@ -44,36 +44,4 @@ public class DistinctTest extends TestBase {
       .onFailure(ex -> ctx.assertEquals("intentional", ex.getMessage()))
       .onComplete(ctx.asyncAssertFailure());
   }
-
-  @Test
-  public void testDistinctReturnedObjectNotModified(TestContext ctx) {
-    final JsonArray given = new JsonArray().add("value1").add("value2");
-    final JsonArray expected = given.copy();
-
-    mock.distinct()
-      .inCollection("distinct")
-      .withFieldName("testDistinct")
-      .returns(given);
-
-    db.distinct("distinct", "testDistinct", null)
-      .onSuccess(actual -> ctx.assertEquals(expected, actual))
-      .onSuccess(actual -> {
-        actual.remove(0);
-        actual.add("add");
-      })
-      .onComplete(ctx.asyncAssertSuccess());
-  }
-
-  @Test
-  public void testDistinctFileReturnedObjectNotModified(TestContext ctx) {
-    final JsonArray expected = new JsonArray().add("A").add("B").add("C");
-
-    db.distinct("distinct", "testDistinctFile", "java.lang.String")
-      .onSuccess(actual -> ctx.assertEquals(expected, actual))
-      .onSuccess(actual -> {
-        actual.remove(0);
-        actual.add("add");
-      })
-      .onComplete(ctx.asyncAssertSuccess());
-  }
 }

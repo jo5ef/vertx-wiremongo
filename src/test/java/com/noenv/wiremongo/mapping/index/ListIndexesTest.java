@@ -2,17 +2,10 @@ package com.noenv.wiremongo.mapping.index;
 
 import com.noenv.wiremongo.TestBase;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.CompletableHelper;
-import io.vertx.reactivex.MaybeHelper;
-import io.vertx.reactivex.SingleHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 @RunWith(VertxUnitRunner.class)
 public class ListIndexesTest extends TestBase {
@@ -47,47 +40,5 @@ public class ListIndexesTest extends TestBase {
     db.listIndexes("testListIndexesFileError")
       .onFailure(e -> ctx.assertEquals("intentional", e.getMessage()))
       .onComplete(ctx.asyncAssertFailure());
-  }
-
-  @Test
-  public void testListIndexesReturnedObjectNotModified(TestContext ctx) {
-    final JsonArray given = new JsonArray()
-      .add("value1")
-      .add("value2")
-      .add(new JsonObject()
-        .put("field1", "value3")
-        .put("field2", "value4")
-        .put("field3", new JsonArray()
-          .add("value5")
-          .add("value6")
-        )
-      );
-    final JsonArray expected = given.copy();
-
-    mock.listIndexes()
-      .inCollection("testListIndexes")
-      .returns(given);
-
-    db.listIndexes("testListIndexes")
-      .onSuccess(actual -> ctx.assertEquals(expected, actual))
-      .onSuccess(actual -> {
-        actual.remove(0);
-        actual.add("add");
-        actual.getJsonObject(1).put("add", "add");
-      })
-      .onComplete(ctx.asyncAssertSuccess());
-  }
-
-  @Test
-  public void testListIndexesFileReturnedObjectNotModified(TestContext ctx) {
-    final JsonArray expected = new JsonArray().add(87).add(92);
-
-    db.listIndexes("testListIndexesFile")
-      .onSuccess(actual -> ctx.assertEquals(expected, actual))
-      .onSuccess(actual -> {
-        actual.remove(0);
-        actual.add("add");
-      })
-      .onComplete(ctx.asyncAssertSuccess());
   }
 }

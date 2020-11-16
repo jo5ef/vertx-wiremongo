@@ -39,20 +39,4 @@ public class GetCollectionsTest extends TestBase {
       })
       .onComplete(ctx.asyncAssertFailure());
   }
-
-  @Test
-  public void testGetCollectionReturnedObjectNotModified(TestContext ctx) {
-    final List<String> given = Arrays.asList("first", "second");
-    final List<String> expected = new ArrayList<>(given);
-
-    mock.getCollections().returns(given);
-
-    db.getCollections()
-      .onSuccess(actual -> ctx.assertEquals(expected, actual))
-      .onSuccess(actual -> {
-        actual.remove(0);
-        actual.add("add");
-      })
-      .onComplete(ctx.asyncAssertSuccess());
-  }
 }
