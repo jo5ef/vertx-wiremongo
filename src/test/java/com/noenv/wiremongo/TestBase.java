@@ -11,12 +11,12 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public abstract class TestBase {
 
-  protected static WireMongo mock;
+  protected static WireMongoImpl mock;
   protected MongoClient db;
 
   @BeforeClass
   public static void setUp(TestContext ctx) {
-    mock = new WireMongo(Vertx.vertx());
+    mock = new WireMongoImpl(Vertx.vertx());
     mock.readFileMappings("wiremongo-mocks")
       .onComplete(ctx.asyncAssertSuccess());
   }

@@ -1,131 +1,149 @@
 package com.noenv.wiremongo;
 
-import com.noenv.wiremongo.command.Command;
-import com.noenv.wiremongo.mapping.Mapping;
+import com.noenv.wiremongo.mapping.Count;
+import com.noenv.wiremongo.mapping.MatchAll;
+import com.noenv.wiremongo.mapping.RunCommand;
+import com.noenv.wiremongo.mapping.aggregate.Aggregate;
+import com.noenv.wiremongo.mapping.aggregate.AggregateWithOptions;
+import com.noenv.wiremongo.mapping.bulkwrite.BulkWrite;
+import com.noenv.wiremongo.mapping.bulkwrite.BulkWriteWithOptions;
+import com.noenv.wiremongo.mapping.collection.CreateCollection;
+import com.noenv.wiremongo.mapping.collection.DropCollection;
+import com.noenv.wiremongo.mapping.collection.GetCollections;
+import com.noenv.wiremongo.mapping.distinct.Distinct;
+import com.noenv.wiremongo.mapping.distinct.DistinctBatch;
+import com.noenv.wiremongo.mapping.distinct.DistinctBatchWithQuery;
+import com.noenv.wiremongo.mapping.distinct.DistinctWithQuery;
+import com.noenv.wiremongo.mapping.find.*;
+import com.noenv.wiremongo.mapping.index.CreateIndex;
+import com.noenv.wiremongo.mapping.index.CreateIndexWithOptions;
+import com.noenv.wiremongo.mapping.index.DropIndex;
+import com.noenv.wiremongo.mapping.index.ListIndexes;
+import com.noenv.wiremongo.mapping.insert.Insert;
+import com.noenv.wiremongo.mapping.insert.InsertWithOptions;
+import com.noenv.wiremongo.mapping.remove.RemoveDocument;
+import com.noenv.wiremongo.mapping.remove.RemoveDocumentWithOptions;
+import com.noenv.wiremongo.mapping.remove.RemoveDocuments;
+import com.noenv.wiremongo.mapping.remove.RemoveDocumentsWithOptions;
+import com.noenv.wiremongo.mapping.replace.ReplaceDocuments;
+import com.noenv.wiremongo.mapping.replace.ReplaceDocumentsWithOptions;
+import com.noenv.wiremongo.mapping.save.Save;
+import com.noenv.wiremongo.mapping.save.SaveWithOptions;
+import com.noenv.wiremongo.mapping.update.UpdateCollection;
+import com.noenv.wiremongo.mapping.update.UpdateCollectionWithOptions;
+import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.core.streams.ReadStream;
+import io.vertx.ext.mongo.MongoClient;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+@VertxGen
+public interface WireMongo {
 
-public class WireMongo implements WireMongoCommands {
-
-  private static final Logger logger = LoggerFactory.getLogger(WireMongo.class);
-
-  private Vertx vertx;
-  private final List<Mapping<?, ? extends Command, ?>> mappings = Collections.synchronizedList(new ArrayList<>());
-  private final WireMongoClient client;
-  private int priorityCounter = 1;
-
-  public WireMongo() {
-    this(null);
+  static WireMongo create(Vertx vertx) {
+    return new WireMongoImpl(vertx);
   }
 
-  public WireMongo(Vertx vertx) {
-    this.vertx = vertx;
-    this.client = WireMongoClient.createShared(vertx, null, "").setWireMongo(this);
+  default void readFileMappings(Handler<AsyncResult<Void>> handler) {
+    readFileMappings().onComplete(handler);
   }
 
-  public WireMongoClient getClient() {
-    return client;
+  default void readFileMappings(String path, Handler<AsyncResult<Void>> handler) {
+    readFileMappings().onComplete(handler);
   }
 
-  public Future<Void> readFileMappings() {
+  default Future<Void> readFileMappings() {
     return readFileMappings("wiremongo");
   }
 
-  public Future<Void> readFileMappings(String path) {
-    Promise<List<String>> promise = Promise.promise();
-    if (vertx == null) {
-      return Future.failedFuture("to read file mappings, initialize WireMongo with a vertx instance");
-    }
-    vertx.fileSystem().readDir(path, promise);
-    return promise.future()
-      .compose(l -> l.stream()
-        .map(p -> p.toLowerCase().endsWith(".json") ? readMappingFromFile(p) : readFileMappings(p))
-        .reduce(Future.succeededFuture(), (a, b) -> a.compose(x -> b)))
-      .mapEmpty();
-  }
+  Future<Void> readFileMappings(String path);
 
-  private Future<Void> readMappingFromFile(String file) {
-    Promise<Buffer> promise = Promise.promise();
-    vertx.fileSystem().readFile(file, promise);
-    return promise.future()
-      .map(Buffer::toJsonObject)
-      .map(Mapping::create)
-      .map(this::addMapping)
-      .mapEmpty();
-  }
+  MongoClient getClient();
 
-  @Override
-  public <T extends Mapping<?, ?, ?>> T addMapping(T mapping) {
-    if (mapping.priority() == 0) {
-      mapping.priority(priorityCounter++);
-    }
-    mappings.add(mapping);
-    return mapping;
-  }
+  @Fluent
+  WireMongo clear();
 
-  @Override
-  public <T extends Mapping<?, ?, ?>> boolean removeMapping(T mapping) {
-    return mappings.remove(mapping);
-  }
+  MatchAll matchAll();
 
-  <T, U extends Command> Future<T> call(U request) {
-    logger.debug("wiremongo received request: " + request.toString());
-    Mapping<T, U, ?> mapping = this.findMapping(request);
-    if (mapping == null) {
-      return Future.failedFuture("no mapping found: " + request);
-    }
-    try {
-      return Future.succeededFuture(mapping.invoke(request));
-    } catch (Throwable ex) {
-      return Future.failedFuture(ex);
-    }
-  }
+  Insert insert();
 
-  <U extends Command> ReadStream<JsonObject> callStream(U request) {
-    Mapping<ReadStream<JsonObject>, U, ?> mapping = this.findMapping(request);
-    if (mapping == null) {
-      return MemoryStream.error(new IllegalArgumentException("no mapping found: " + request));
-    }
-    try {
-      return mapping.invoke(request);
-    } catch (Throwable ex) {
-      return MemoryStream.error(ex);
-    }
-  }
+  InsertWithOptions insertWithOptions();
 
-  private <T, U extends Command> Mapping<T, U, ?> findMapping(U request) {
-    synchronized (mappings) {
-      //noinspection unchecked
-      return (Mapping<T, U, ?>) mappings.stream()
-        .filter(m -> {
-          try {
-            return m.matches(request);
-          } catch (Throwable ex) {
-            logger.error("error evaluating mapping", ex);
-            return false;
-          }
-        })
-        .max(Comparator.comparingInt(Mapping::priority))
-        .orElseGet(() -> {
-          logger.info("no mapping found (" + request.toString() + ")");
-          return null;
-        });
-    }
-  }
+  Save save();
 
-  public WireMongo clear() {
-    mappings.clear();
-    return this;
-  }
+  SaveWithOptions saveWithOptions();
+
+  UpdateCollection updateCollection();
+
+  UpdateCollectionWithOptions updateCollectionWithOptions();
+
+  Find find();
+
+  FindWithOptions findWithOptions();
+
+  FindOne findOne();
+
+  FindOneAndUpdate findOneAndUpdate();
+
+  FindOneAndReplace findOneAndReplace();
+
+  FindOneAndReplaceWithOptions findOneAndReplaceWithOptions();
+
+  FindOneAndUpdateWithOptions findOneAndUpdateWithOptions();
+
+  FindOneAndDelete findOneAndDelete();
+
+  FindOneAndDeleteWithOptions findOneAndDeleteWithOptions();
+
+  FindBatch findBatch();
+
+  FindBatchWithOptions findBatchWithOptions();
+
+  CreateCollection createCollection();
+
+  DropCollection dropCollection();
+
+  CreateIndex createIndex();
+
+  BulkWrite bulkWrite();
+
+  BulkWriteWithOptions bulkWriteWithOptions();
+
+  Count count();
+
+  ListIndexes listIndexes();
+
+  GetCollections getCollections();
+
+  CreateIndexWithOptions createIndexWithOptions();
+
+  RemoveDocument removeDocument();
+
+  RemoveDocumentWithOptions removeDocumentWithOptions();
+
+  RemoveDocuments removeDocuments();
+
+  RemoveDocumentsWithOptions removeDocumentsWithOptions();
+
+  ReplaceDocuments replaceDocuments();
+
+  ReplaceDocumentsWithOptions replaceDocumentsWithOptions();
+
+  RunCommand runCommand();
+
+  Aggregate aggregate();
+
+  AggregateWithOptions aggregateWithOptions();
+
+  DropIndex dropIndex();
+
+  Distinct distinct();
+
+  DistinctBatch distinctBatch();
+
+  DistinctWithQuery distinctWithQuery();
+
+  DistinctBatchWithQuery distinctBatchWithQuery();
 }

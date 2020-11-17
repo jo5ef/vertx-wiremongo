@@ -46,16 +46,16 @@ import java.util.List;
 public class WireMongoClient implements MongoClient {
 
   private static WireMongoClient instance;
-  private WireMongo wireMongo;
+  private WireMongoImpl wireMongo;
 
   private WireMongoClient() {
   }
 
-  public WireMongo getWireMongo() {
+  public WireMongoImpl getWireMongo() {
     return wireMongo;
   }
 
-  WireMongoClient setWireMongo(WireMongo wireMongo) {
+  WireMongoClient setWireMongo(WireMongoImpl wireMongo) {
     this.wireMongo = wireMongo;
     return this;
   }

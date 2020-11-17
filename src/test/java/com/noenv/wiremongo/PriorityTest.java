@@ -13,11 +13,11 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class PriorityTest {
 
-  private WireMongo wiremongo;
+  private WireMongoImpl wiremongo;
 
   @Before
   public void setUp() {
-    wiremongo = new WireMongo();
+    wiremongo = new WireMongoImpl();
   }
 
   @Test
@@ -41,7 +41,7 @@ public class PriorityTest {
 
   @Test
   public void testPriorityFiles(TestContext ctx) {
-    wiremongo = new WireMongo(Vertx.vertx());
+    wiremongo = new WireMongoImpl(Vertx.vertx());
     wiremongo.readFileMappings("wiremongo-mocks")
       .flatMap(x -> {
         Promise<Long> p = Promise.promise();

@@ -1,6 +1,6 @@
 package com.noenv.wiremongo.examples;
 
-import com.noenv.wiremongo.WireMongo;
+import com.noenv.wiremongo.WireMongoImpl;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClientDeleteResult;
 import io.vertx.ext.unit.TestContext;
@@ -17,12 +17,12 @@ import static com.noenv.wiremongo.matching.JsonMatcher.equalToJson;
 @RunWith(VertxUnitRunner.class)
 public class FruitDatabaseTest {
 
-  private WireMongo wiremongo;
+  private WireMongoImpl wiremongo;
   private FruitDatabase db;
 
   @Before
   public void setUp() {
-    wiremongo = new WireMongo();
+    wiremongo = new WireMongoImpl();
     db = new FruitDatabase(wiremongo.getClient());
   }
 

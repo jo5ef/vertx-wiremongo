@@ -64,7 +64,7 @@ public class FruitDatabase {
 }
 ----
 
-To test this class, simply create an instance of `WireMongo`, set up some mocking using its fluent methods, and use it as the `MongoClient` implementation in your tests:
+To test this class, simply create an instance of `WireMongoImpl`, set up some mocking using its fluent methods, and use it as the `MongoClient` implementation in your tests:
 
 [source,java]
 ----

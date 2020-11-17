@@ -1,5 +1,7 @@
 package com.noenv.wiremongo.command;
 
+import io.vertx.codegen.annotations.DataObject;
+
 public abstract class CommandBase implements Command {
 
   private final String method;

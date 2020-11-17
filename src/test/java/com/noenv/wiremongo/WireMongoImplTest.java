@@ -14,17 +14,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class WireMongoTest {
+public class WireMongoImplTest {
 
   private JsonObject config = new JsonObject().put("class", WireMongoClient.class.getName());
   private MongoClient db;
-  private WireMongo mock;
+  private WireMongoImpl mock;
 
   @Before
   public void setUp() {
     Vertx vertx = Vertx.vertx();
     db = WireMongoClient.createShared(vertx, config, null);
-    mock = new WireMongo(vertx);
+    mock = new WireMongoImpl(vertx);
   }
 
   @After

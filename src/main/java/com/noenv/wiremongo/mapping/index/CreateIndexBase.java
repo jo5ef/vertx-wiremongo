@@ -12,10 +12,6 @@ public abstract class CreateIndexBase<U extends CreateIndexBaseCommand, C extend
 
   private Matcher<JsonObject> key;
 
-  public CreateIndexBase() {
-    this("createIndex");
-  }
-
   public CreateIndexBase(String method) {
     super(method);
   }

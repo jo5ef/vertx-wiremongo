@@ -1,6 +1,6 @@
 package com.noenv.wiremongo.examples;
 
-import com.noenv.wiremongo.WireMongo;
+import com.noenv.wiremongo.WireMongoImpl;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -18,7 +18,7 @@ public class FruitDatabaseTestWithFiles {
 
   @Before
   public void setUp(TestContext ctx) {
-    WireMongo wiremongo = new WireMongo(Vertx.vertx());
+    WireMongoImpl wiremongo = new WireMongoImpl(Vertx.vertx());
     db = new FruitDatabase(wiremongo.getClient());
     wiremongo.readFileMappings("example-mocks").onComplete(ctx.asyncAssertSuccess());
   }

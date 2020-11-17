@@ -4,6 +4,7 @@ import com.noenv.wiremongo.StubBase;
 import com.noenv.wiremongo.command.Command;
 import com.noenv.wiremongo.command.CommandBase;
 import com.noenv.wiremongo.verification.Verification;
+import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
 import java.util.LinkedList;
